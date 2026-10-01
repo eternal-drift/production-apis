@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Orders SOAP 1.1 contract (document/literal, wrapped). This file is the source of truth for S6.
+  Versioning: breaking changes get a new namespace (urn:northwind:orders:v2) and a new endpoint.
+-->
+<definitions name="OrderService"
+    targetNamespace="urn:northwind:orders:v1"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:tns="urn:northwind:orders:v1"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <types>
+    <xsd:schema targetNamespace="urn:northwind:orders:v1" elementFormDefault="qualified">
+
+      <xsd:simpleType name="OrderStatus">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="PENDING"/>
+          <xsd:enumeration value="PAID"/>
+          <xsd:enumeration value="SHIPPED"/>
+          <xsd:enumeration value="CANCELLED"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:complexType name="OrderItem">
+        <xsd:sequence>
+          <xsd:element name="sku" type="xsd:string"/>
+          <xsd:element name="quantity" type="xsd:int"/>
+          <xsd:element name="unitPriceCents" type="xsd:long"/>
+        </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:complexType name="Order">
+        <xsd:sequence>
+          <xsd:element name="id" type="xsd:string"/>
+          <xsd:element name="customerId" type="xsd:string"/>
+          <xsd:element name="currency" type="xsd:string"/>
+          <xsd:element name="items">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="item" type="tns:OrderItem" maxOccurs="unbounded"/>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="totalCents" type="xsd:long"/>
+          <xsd:element name="status" type="tns:OrderStatus"/>
+          <xsd:element name="version" type="xsd:int"/>
+          <xsd:element name="createdAt" type="xsd:string"/>
+          <xsd:element name="updatedAt" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:complexType>
+
+      <xsd:element name="CreateOrderRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="customerId" type="xsd:string"/>
+            <xsd:element name="currency" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="items">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="item" type="tns:OrderItem" maxOccurs="unbounded"/>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="idempotencyKey" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CreateOrderResponse">
+        <xsd:complexType><xsd:sequence><xsd:element name="order" type="tns:Order"/></xsd:sequence></xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetOrderRequest">
+        <xsd:complexType><xsd:sequence><xsd:element name="id" type="xsd:string"/></xsd:sequence></xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetOrderResponse">
+        <xsd:complexType><xsd:sequence><xsd:element name="order" type="tns:Order"/></xsd:sequence></xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="ListOrdersRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="customerId" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="status" type="tns:OrderStatus" minOccurs="0"/>
+            <xsd:element name="limit" type="xsd:int" minOccurs="0"/>
+            <xsd:element name="cursor" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="ListOrdersResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="orders">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="order" type="tns:Order" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="nextCursor" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="UpdateOrderStatusRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="id" type="xsd:string"/>
+            <xsd:element name="status" type="tns:OrderStatus"/>
+            <xsd:element name="expectedVersion" type="xsd:int" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="UpdateOrderStatusResponse">
+        <xsd:complexType><xsd:sequence><xsd:element name="order" type="tns:Order"/></xsd:sequence></xsd:complexType>
+      </xsd:element>
+
+      <!-- Business error payload carried inside soap:Fault/detail -->
+      <xsd:element name="OrderFault">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="errorCode" type="xsd:string"/>
+            <xsd:element name="message" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="CreateOrderIn"><part name="parameters" element="tns:CreateOrderRequest"/></message>
+  <message name="CreateOrderOut"><part name="parameters" element="tns:CreateOrderResponse"/></message>
+  <message name="GetOrderIn"><part name="parameters" element="tns:GetOrderRequest"/></message>
+  <message name="GetOrderOut"><part name="parameters" element="tns:GetOrderResponse"/></message>
+  <message name="ListOrdersIn"><part name="parameters" element="tns:ListOrdersRequest"/></message>
+  <message name="ListOrdersOut"><part name="parameters" element="tns:ListOrdersResponse"/></message>
+  <message name="UpdateOrderStatusIn"><part name="parameters" element="tns:UpdateOrderStatusRequest"/></message>
+  <message name="UpdateOrderStatusOut"><part name="parameters" element="tns:UpdateOrderStatusResponse"/></message>
+  <message name="OrderFaultMsg"><part name="fault" element="tns:OrderFault"/></message>
+
+  <portType name="OrderPortType">
+    <operation name="CreateOrder">
+      <input message="tns:CreateOrderIn"/><output message="tns:CreateOrderOut"/><fault name="OrderFault" message="tns:OrderFaultMsg"/>
+    </operation>
+    <operation name="GetOrder">
+      <input message="tns:GetOrderIn"/><output message="tns:GetOrderOut"/><fault name="OrderFault" message="tns:OrderFaultMsg"/>
+    </operation>
+    <operation name="ListOrders">
+      <input message="tns:ListOrdersIn"/><output message="tns:ListOrdersOut"/><fault name="OrderFault" message="tns:OrderFaultMsg"/>
+    </operation>
+    <operation name="UpdateOrderStatus">
+      <input message="tns:UpdateOrderStatusIn"/><output message="tns:UpdateOrderStatusOut"/><fault name="OrderFault" message="tns:OrderFaultMsg"/>
+    </operation>
+  </portType>
+
+  <binding name="OrderBinding" type="tns:OrderPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="CreateOrder">
+      <soap:operation soapAction="urn:northwind:orders:v1#CreateOrder"/>
+      <input><soap:body use="literal"/></input><output><soap:body use="literal"/></output>
+      <fault name="OrderFault"><soap:fault name="OrderFault" use="literal"/></fault>
+    </operation>
+    <operation name="GetOrder">
+      <soap:operation soapAction="urn:northwind:orders:v1#GetOrder"/>
+      <input><soap:body use="literal"/></input><output><soap:body use="literal"/></output>
+      <fault name="OrderFault"><soap:fault name="OrderFault" use="literal"/></fault>
+    </operation>
+    <operation name="ListOrders">
+      <soap:operation soapAction="urn:northwind:orders:v1#ListOrders"/>
+      <input><soap:body use="literal"/></input><output><soap:body use="literal"/></output>
+      <fault name="OrderFault"><soap:fault name="OrderFault" use="literal"/></fault>
+    </operation>
+    <operation name="UpdateOrderStatus">
+      <soap:operation soapAction="urn:northwind:orders:v1#UpdateOrderStatus"/>
+      <input><soap:body use="literal"/></input><output><soap:body use="literal"/></output>
+      <fault name="OrderFault"><soap:fault name="OrderFault" use="literal"/></fault>
+    </operation>
+  </binding>
+
+  <service name="OrderService">
+    <port name="OrderPort" binding="tns:OrderBinding">
+      <!-- replaced at request time with the externally visible URL -->
+      <soap:address location="http://localhost:3006/soap"/>
+    </port>
+  </service>
+</definitions>
