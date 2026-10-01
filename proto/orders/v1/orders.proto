@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package orders.v1;
+
+// Orders service. Backwards-compatible evolution rules: never reuse or renumber
+// fields, add new fields only, reserve removed numbers.
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (Order);
+  // Server-streaming: live order events until the client cancels.
+  rpc WatchOrders(WatchOrdersRequest) returns (stream OrderEvent);
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_CANCELLED = 4;
+}
+
+message OrderItem {
+  string sku = 1;
+  int32 quantity = 2;
+  int64 unit_price_cents = 3;
+}
+
+message Order {
+  string id = 1;
+  string customer_id = 2;
+  string currency = 3;
+  repeated OrderItem items = 4;
+  int64 total_cents = 5;
+  OrderStatus status = 6;
+  int32 version = 7;
+  string created_at = 8; // RFC 3339
+  string updated_at = 9; // RFC 3339
+}
+
+message CreateOrderRequest {
+  string customer_id = 1;
+  string currency = 2;
+  repeated OrderItem items = 3;
+  string idempotency_key = 4;
+}
+
+message GetOrderRequest { string id = 1; }
+
+message ListOrdersRequest {
+  string customer_id = 1;
+  OrderStatus status = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  string next_page_token = 2; // empty when no more pages
+}
+
+message UpdateOrderStatusRequest {
+  string id = 1;
+  OrderStatus status = 2;
+  int32 expected_version = 3; // 0 = unconditional
+}
+
+message WatchOrdersRequest { string customer_id = 1; }
+
+message OrderEvent {
+  string id = 1;
+  string type = 2; // order.created | order.status_changed
+  string occurred_at = 3;
+  Order order = 4;
+}
