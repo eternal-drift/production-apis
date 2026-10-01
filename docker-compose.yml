@@ -1,0 +1,18 @@
+services:
+  apis:
+    build: .
+    ports:
+      - "3001:3001" # REST
+      - "3002:3002" # GraphQL
+      - "3003:3003" # gRPC
+      - "3004:3004" # WebSocket
+      - "3005:3005" # Webhook management
+      - "3006:3006" # SOAP
+    environment:
+      APP_ENV: production
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>= 32 chars), e.g. export JWT_SECRET=$(openssl rand -hex 32)}
+      LOG_LEVEL: info
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
