@@ -1,0 +1,88 @@
+[project]
+name = "production-apis"
+version = "1.0.0"
+description = "Six production-grade API styles (REST, GraphQL, gRPC, WebSocket, Webhooks, SOAP) over one shared order domain."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "pyjwt>=2.9",
+  "prometheus-client>=0.21",
+  "structlog>=24.4",
+  "strawberry-graphql[fastapi]>=0.250",
+  "grpcio>=1.68",
+  "grpcio-health-checking>=1.68",
+  "protobuf>=5.28",
+  "websockets>=13",
+  "httpx>=0.27",
+  "defusedxml>=0.7",
+  "lxml>=5.3",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "grpcio-tools>=1.68",
+  "zeep>=4.3",
+  "ruff>=0.7",
+  "mypy>=1.13",
+  "types-protobuf",
+  "lxml-stubs",
+  "types-defusedxml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/production_apis"]
+
+[project.scripts]
+production-apis = "production_apis.main:run"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["scenario(id): ties a test to an acceptance criterion in docs/scenarios.md"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["src/production_apis/gen"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "SIM"]
+ignore = ["S101", "B008", "E501", "ASYNC109", "ASYNC110", "UP047"]  # E501: ruff format owns line length
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]
+"scripts/*" = ["S"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["src/production_apis/gen"]
+
+[[tool.mypy.overrides]]
+module = ["grpc.*", "grpc_health.*", "grpc_tools.*", "strawberry.*", "production_apis.gen.*", "zeep.*"]
+ignore_errors = true
+ignore_missing_imports = true
+
+# Adapters sit on dynamically-typed protocol libraries (protobuf stubs, strawberry, grpc);
+# strictness stays on for core/ and domain/ where the business rules live.
+[[tool.mypy.overrides]]
+module = ["production_apis.apis.*", "production_apis.journey", "production_apis.main"]
+disallow_untyped_calls = false
+warn_return_any = false
+disallow_subclassing_any = false
+warn_unused_ignores = false
+disable_error_code = ["call-overload", "attr-defined", "arg-type", "list-item", "valid-type"]
